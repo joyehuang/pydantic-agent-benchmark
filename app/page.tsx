@@ -1,26 +1,26 @@
-import { ArrowRight, FlaskConical, Gauge, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { copy, type Locale } from '@/lib/copy';
 import { loadLatestResults } from '@/lib/results';
 
 type Row = Record<string, string | number | boolean | null>;
 
 function SummaryTable({ rows }: { rows: Row[] }) {
-  if (!rows.length) return <p className="text-sm text-muted-foreground">No summary rows yet.</p>;
+  if (!rows.length) return <p className="text-sm text-muted-foreground">No rows yet.</p>;
   const columns = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl border bg-white">
       <Table>
         <TableHeader>
-          <TableRow className="border-b bg-muted/30 hover:bg-muted/40">
+          <TableRow className="bg-muted/60 hover:bg-muted/60">
             {columns.map((column) => (
-              <TableHead key={column} className="font-semibold text-foreground">
+              <TableHead key={column} className="h-11 font-semibold text-foreground">
                 {column}
               </TableHead>
             ))}
@@ -28,9 +28,9 @@ function SummaryTable({ rows }: { rows: Row[] }) {
         </TableHeader>
         <TableBody>
           {rows.map((row, index) => (
-            <TableRow key={index} className="transition-colors hover:bg-muted/20">
+            <TableRow key={index} className="hover:bg-muted/30">
               {columns.map((column) => (
-                <TableCell key={column} className="font-medium">
+                <TableCell key={column} className="font-medium text-foreground/85">
                   {String(row[column] ?? '')}
                 </TableCell>
               ))}
@@ -42,18 +42,19 @@ function SummaryTable({ rows }: { rows: Row[] }) {
   );
 }
 
-function DetailTable({ rows }: { rows: Row[] }) {
-  if (!rows.length) return <p className="text-sm text-muted-foreground">No detailed rows yet.</p>;
+function DetailTable({ rows, locale }: { rows: Row[]; locale: Locale }) {
+  if (!rows.length) return <p className="text-sm text-muted-foreground">No rows yet.</p>;
   const columns = Array.from(new Set(rows.flatMap((row) => Object.keys(row)))).filter((key) => key !== 'raw');
   const previewRows = rows.slice(0, 8);
+  const t = copy[locale];
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl border bg-white">
       <Table>
         <TableHeader>
-          <TableRow className="border-b bg-muted/30 hover:bg-muted/40">
+          <TableRow className="bg-muted/60 hover:bg-muted/60">
             {columns.map((column) => (
-              <TableHead key={column} className="font-semibold text-foreground">
+              <TableHead key={column} className="h-11 font-semibold text-foreground">
                 {column}
               </TableHead>
             ))}
@@ -61,9 +62,9 @@ function DetailTable({ rows }: { rows: Row[] }) {
         </TableHeader>
         <TableBody>
           {previewRows.map((row, index) => (
-            <TableRow key={index} className="transition-colors hover:bg-muted/20">
+            <TableRow key={index} className="hover:bg-muted/30">
               {columns.map((column) => (
-                <TableCell key={column} className="max-w-[220px] truncate font-medium">
+                <TableCell key={column} className="max-w-[220px] truncate text-foreground/80">
                   {String(row[column] ?? '')}
                 </TableCell>
               ))}
@@ -72,194 +73,162 @@ function DetailTable({ rows }: { rows: Row[] }) {
         </TableBody>
       </Table>
       {rows.length > 8 && (
-        <div className="border-t bg-muted/20 px-4 py-3 text-center text-xs text-muted-foreground">
-          Showing 8 of {rows.length} rows
+        <div className="border-t bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground">
+          {t.showing} {rows.length} {t.rows}
         </div>
       )}
     </div>
   );
 }
 
-function StatCard({ title, value, description, icon: Icon }: { title: string; value: string; description: string; icon: React.ComponentType<{ className?: string }> }) {
+function MetricStrip({ locale, phase2, phase3 }: { locale: Locale; phase2: any; phase3: any }) {
+  const t = copy[locale];
+  const items = [
+    { label: t.stats.modes, value: phase2 ? String(phase2.summary.length) : '—' },
+    { label: t.stats.success, value: phase3 ? `${Math.round(Number(phase3.summary?.[2]?.task_success_rate ?? 0) * 100)}%` : '—' },
+    { label: t.stats.retries, value: phase3 ? String(phase3.summary?.[2]?.avg_retries ?? '—') : '—' },
+    { label: t.stats.failure, value: t.stats.looping },
+  ];
+
   return (
-    <Card className="group border-border/60 bg-card/80 shadow-sm backdrop-blur-sm transition-all hover:border-border hover:shadow-lg">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <CardDescription className="text-xs font-medium uppercase tracking-wider">{title}</CardDescription>
-            <CardTitle className="text-4xl font-bold tracking-tight">{value}</CardTitle>
-          </div>
-          <div className="rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/20 transition-all group-hover:bg-primary/15 group-hover:ring-primary/30">
-            <Icon className="size-5" />
-          </div>
+    <div className="grid gap-3 md:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="rounded-2xl border bg-white px-4 py-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{item.label}</div>
+          <div className="mt-2 text-3xl font-semibold tracking-tight">{item.value}</div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams?: Promise<{ lang?: string }> }) {
+  const params = (await searchParams) ?? {};
+  const locale: Locale = params.lang === 'en' ? 'en' : 'zh';
+  const t = copy[locale];
+  const other = locale === 'zh' ? 'en' : 'zh';
+
   const { phase2, phase3 } = await loadLatestResults();
   const phase2Rows = phase2?.rows ?? [];
   const phase3Rows = phase3?.rows ?? [];
+  const phase3FailureRows = (phase3 as { failure_summary?: Row[] } | null)?.failure_summary ?? [];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-10 px-6 py-12 md:px-10 md:py-16 lg:px-12 lg:py-20">
-      <section className="space-y-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] shadow-sm">
-            Pydantic Agent Benchmark
-          </Badge>
-          <Badge variant="outline" className="rounded-full px-4 py-1.5 text-xs font-medium shadow-sm">
-            Kimi 2.5 · shadcn/ui · Next.js
-          </Badge>
+    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-6 py-10 md:px-10 lg:px-12 lg:py-14">
+      <section className="space-y-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="secondary" className="rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em]">
+              {t.badge}
+            </Badge>
+            <Badge variant="outline" className="rounded-full px-4 py-1.5 text-xs">
+              {t.stack}
+            </Badge>
+          </div>
+          <Button asChild variant="outline" className="rounded-xl">
+            <a href={`/?lang=${other}`}>{other.toUpperCase()}</a>
+          </Button>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-          <div className="space-y-6">
-            <h1 className="max-w-4xl bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl md:leading-[1.1]">
-              Measure structured-output agents like a system, not a vibe.
+          <div className="space-y-4">
+            <h1 className="max-w-5xl text-5xl font-semibold leading-[1.02] tracking-tight text-foreground md:text-7xl">
+              {t.title}
             </h1>
-            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
-              Compare prompt-only JSON, schema-constrained output, and schema plus Pydantic validation across
-              single-turn extraction and multi-step agent loops.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Button asChild size="lg" className="shadow-md transition-shadow hover:shadow-lg">
+            <p className="max-w-3xl text-lg leading-8 text-muted-foreground">{t.subtitle}</p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Button asChild size="lg" className="rounded-xl px-5 shadow-sm">
                 <a href="#results">
-                  View benchmark results
+                  {t.primaryCta}
                   <ArrowRight className="ml-2 size-4" />
                 </a>
               </Button>
-              <Button asChild variant="outline" size="lg" className="shadow-sm">
+              <Button asChild variant="outline" size="lg" className="rounded-xl px-5">
                 <a href="https://ui.shadcn.com/docs/installation/next" target="_blank" rel="noreferrer">
-                  shadcn/ui docs
+                  {t.secondaryCta}
                 </a>
               </Button>
             </div>
           </div>
 
-          <Card className="border-border/60 bg-card/80 shadow-md backdrop-blur-sm transition-all hover:shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl">Current build status</CardTitle>
-              <CardDescription className="leading-relaxed">Frontend is on shadcn/ui. Benchmark runner is live. Phase 3 is being tightened for stability.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
-                <span className="font-medium">Phase 2</span>
-                <Badge className="shadow-sm">Ready</Badge>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
-                <span className="font-medium">Phase 3 runner</span>
-                <Badge variant="secondary" className="shadow-sm">Improving</Badge>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
-                <span className="font-medium">Vercel-ready UI</span>
-                <Badge variant="outline" className="shadow-sm">In progress</Badge>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-3 rounded-3xl border bg-white p-6">
+            <div className="text-sm font-medium text-muted-foreground">{t.phase3FailureTitle}</div>
+            <div className="text-2xl font-semibold tracking-tight">{phase3 ? `${Math.round(Number(phase3.summary?.[2]?.task_success_rate ?? 0) * 100)}%` : '—'}</div>
+            <p className="text-sm leading-6 text-muted-foreground">{t.note}</p>
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        <StatCard
-          title="Speed"
-          value={phase2 ? `${phase2.summary.length} modes` : '—'}
-          description="Track latency per output-control mode with the same temperature and case set."
-          icon={Gauge}
-        />
-        <StatCard
-          title="Success rate"
-          value={phase2 ? `${Math.round(((Number(phase2.summary[0]?.json_success_rate ?? 0)) || 0) * 100)}%+` : '—'}
-          description="Measure JSON parse success, schema validation, task completion, and retry pressure."
-          icon={ShieldCheck}
-        />
-        <StatCard
-          title="Determinism"
-          value="Mock tools"
-          description="Weather, calendar, and docs are mocked so loop differences are easier to explain."
-          icon={FlaskConical}
-        />
-      </section>
+      <MetricStrip locale={locale} phase2={phase2} phase3={phase3} />
 
-      <section id="results" className="space-y-8">
-        <div className="space-y-3">
-          <h2 className="text-3xl font-bold tracking-tight">Benchmark results</h2>
-          <p className="text-base text-muted-foreground">Summary first, then a preview of raw benchmark rows for each phase.</p>
+      <section id="results" className="space-y-5">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-semibold tracking-tight">{t.resultsTitle}</h2>
+          <p className="text-base text-muted-foreground">{t.resultsSubtitle}</p>
         </div>
 
         <Tabs defaultValue="phase2" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 shadow-sm">
-            <TabsTrigger value="phase2" className="font-medium">Phase 2</TabsTrigger>
-            <TabsTrigger value="phase3" className="font-medium">Phase 3</TabsTrigger>
+          <TabsList className="grid w-full max-w-sm grid-cols-2 rounded-2xl border bg-white p-1">
+            <TabsTrigger value="phase2" className="rounded-xl">{t.phase2}</TabsTrigger>
+            <TabsTrigger value="phase3" className="rounded-xl">{t.phase3}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="phase2" className="mt-6">
-            <Card className="border-border/60 bg-card/85 shadow-md backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl">Single-turn structured output</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  Extraction and planning tasks measured for latency, JSON success, and schema pass rate.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {phase2 ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Generated {phase2.generated_at}</p>
-                    </div>
-                    <SummaryTable rows={phase2.summary} />
-                    <Separator className="my-6" />
-                    <div className="space-y-4">
-                      <h3 className="text-base font-semibold">Detailed row preview</h3>
-                      <DetailTable rows={phase2Rows} />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-12 text-center">
-                    <p className="text-sm font-medium text-muted-foreground">No Phase 2 results found yet.</p>
-                    <p className="mt-1 text-xs text-muted-foreground/80">Run the benchmark to see results here.</p>
+          <TabsContent value="phase2" className="mt-6 space-y-6">
+            <section className="space-y-4 rounded-3xl border bg-white p-6">
+              <div>
+                <h3 className="text-2xl font-semibold">{t.phase2Title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t.phase2Desc}</p>
+              </div>
+              {phase2 ? (
+                <>
+                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    {t.generated} {phase2.generated_at}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <SummaryTable rows={phase2.summary} />
+                  <Separator />
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">{t.detail}</h4>
+                    <DetailTable rows={phase2Rows} locale={locale} />
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t.noPhase2}</p>
+              )}
+            </section>
           </TabsContent>
 
-          <TabsContent value="phase3" className="mt-6">
-            <Card className="border-border/60 bg-card/85 shadow-md backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-2xl">Agent loop benchmark</CardTitle>
-                <CardDescription className="text-base leading-relaxed">
-                  Multi-step loop with mocked tools for weather, calendar, retrieval, and final answers.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          <TabsContent value="phase3" className="mt-6 space-y-6">
+            <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-4 rounded-3xl border bg-white p-6">
+                <div>
+                  <h3 className="text-2xl font-semibold">{t.phase3Title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t.phase3Desc}</p>
+                </div>
                 {phase3 ? (
                   <>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Generated {phase3.generated_at}</p>
+                    <div className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                      {t.generated} {phase3.generated_at}
                     </div>
                     <SummaryTable rows={phase3.summary} />
-                    <Separator className="my-6" />
-                    <div className="space-y-4">
-                      <h3 className="text-base font-semibold">Detailed row preview</h3>
-                      <DetailTable rows={phase3Rows} />
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold">{t.detail}</h4>
+                      <DetailTable rows={phase3Rows} locale={locale} />
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-12 text-center">
-                    <p className="text-sm font-medium text-muted-foreground">No Phase 3 results found yet.</p>
-                    <p className="mt-2 text-xs text-muted-foreground/80">The runner is in place; current work is improving timeout tolerance and loop stability.</p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">{t.noPhase3}</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="space-y-4 rounded-3xl border bg-white p-6">
+                <div>
+                  <h3 className="text-xl font-semibold">{t.phase3FailureTitle}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t.phase3FailureDesc}</p>
+                </div>
+                {phase3FailureRows.length ? <SummaryTable rows={phase3FailureRows} /> : <p className="text-sm text-muted-foreground">No rows yet.</p>}
+              </div>
+            </section>
           </TabsContent>
         </Tabs>
       </section>
