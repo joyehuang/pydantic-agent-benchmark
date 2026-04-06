@@ -384,6 +384,10 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 4, tasks:
                     if failure_type and group != 'schema_pydantic_retry':
                         break
 
+                rounds = len([item for item in scratchpad if 'assistant_step' in item])
+                if not task_success and failure_type is None:
+                    failure_type = 'max_rounds_exceeded'
+
                 rows.append(
                     TaskRunResult(
                         task_id=task['id'],
@@ -392,13 +396,14 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 4, tasks:
                         total_latency_ms=total_latency,
                         model_calls=model_calls,
                         retries=retries,
-                        rounds=len([item for item in scratchpad if 'assistant_step' in item]),
+                        rounds=rounds,
                         failure_type=failure_type,
                         last_action=last_action,
                     )
                 )
 
     summary = []
+    failure_summary = []
     for group in GROUPS:
         group_rows = [row for row in rows if row.group == group]
         summary.append(
@@ -411,12 +416,18 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 4, tasks:
                 'avg_rounds': round(mean(r.rounds for r in group_rows), 2),
             }
         )
+        counts: dict[str, int] = {}
+        for row in group_rows:
+            key = row.failure_type or 'success'
+            counts[key] = counts.get(key, 0) + 1
+        failure_summary.append({'group': group, **counts})
 
     return {
         'generated_at': utc_now_iso(),
         'phase': 'phase3',
         'rows': [asdict(row) for row in rows],
         'summary': summary,
+        'failure_summary': failure_summary,
     }
 
 
