@@ -210,6 +210,16 @@ def run_phase2(provider: KimiProvider, repeats: int) -> dict[str, Any]:
     }
 
 
+def same_tool_call_seen(scratchpad: list[dict[str, Any]], action: str, args: dict[str, Any]) -> bool:
+    for item in scratchpad:
+        if 'assistant_step' not in item:
+            continue
+        step = item['assistant_step']
+        if step.get('action') == action and step.get('args') == args:
+            return True
+    return False
+
+
 def tool_result(action: str, args: dict[str, Any]) -> dict[str, Any]:
     if action == 'lookup_weather':
         return WEATHER_DATA.get((args['city'], args['date']), {'condition': 'Unknown', 'temp_low': None, 'temp_high': None})
@@ -238,7 +248,7 @@ AGENT_ACTION_SCHEMA = {
 
 def compact_scratchpad(scratchpad: list[dict[str, Any]]) -> list[dict[str, Any]]:
     compact: list[dict[str, Any]] = []
-    for item in scratchpad[-4:]:
+    for item in scratchpad[-6:]:
         if 'assistant_step' in item:
             step = item['assistant_step']
             compact.append(
@@ -255,21 +265,30 @@ def compact_scratchpad(scratchpad: list[dict[str, Any]]) -> list[dict[str, Any]]
     return compact
 
 
+def previous_actions(scratchpad: list[dict[str, Any]]) -> list[str]:
+    return [item['assistant_step']['action'] for item in scratchpad if 'assistant_step' in item]
+
+
 def build_agent_prompt(task_input: str, scratchpad: list[dict[str, Any]], reference_date: str) -> tuple[str, str]:
+    actions = previous_actions(scratchpad)
     system = (
         'You are an agent loop controller. Return exactly one JSON object and nothing else. '
         'Allowed actions: search_docs, lookup_weather, lookup_calendar, final_answer. '
-        'Use the minimum required tool calls. If enough evidence is already present, return final_answer. '
+        'Use the minimum required tool calls. Never repeat the same tool call with the same arguments. '
+        'If the needed tool results are already in context, return final_answer instead of calling tools again. '
         'Keep thought under 12 words.'
     )
     user = (
         f'Reference date: {reference_date}\n'
         f'Task: {task_input}\n'
+        f'Previous actions: {json.dumps(actions, ensure_ascii=False)}\n'
         f'Context: {json.dumps(compact_scratchpad(scratchpad), ensure_ascii=False)}\n'
         'If weather is needed, lookup_weather args must be {city, date}. '
         'If calendar is needed, lookup_calendar args must be {date}. '
         'If docs are needed, search_docs args must be {query}. '
-        'If done, final_answer args must be {answer, confidence}.\n'
+        'If done, final_answer args must be {answer, confidence}. '
+        'Do not call lookup_calendar twice in a row for the same date. '
+        'Do not call lookup_weather twice in a row for the same city/date.\n'
         'Return the next step now.'
     )
     return system, user
@@ -337,6 +356,15 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 4, tasks:
 
                         step_data = step.model_dump()
                         last_action = step_data['action']
+
+                        if step_data['action'] != 'final_answer' and same_tool_call_seen(scratchpad, step_data['action'], step_data['args']):
+                            failure_type = 'repeated_tool_call'
+                            if group == 'schema_pydantic_retry' and attempt < 1:
+                                retries += 1
+                                attempt += 1
+                                continue
+                            break
+
                         scratchpad.append({'assistant_step': step_data})
                         if step_data['action'] == 'final_answer':
                             task_success = True

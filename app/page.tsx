@@ -15,20 +15,22 @@ function SummaryTable({ rows }: { rows: Row[] }) {
   const columns = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
 
   return (
-    <div className="rounded-2xl border bg-background/70">
+    <div className="overflow-hidden rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="border-b bg-muted/30 hover:bg-muted/40">
             {columns.map((column) => (
-              <TableHead key={column}>{column}</TableHead>
+              <TableHead key={column} className="font-semibold text-foreground">
+                {column}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row, index) => (
-            <TableRow key={index}>
+            <TableRow key={index} className="transition-colors hover:bg-muted/20">
               {columns.map((column) => (
-                <TableCell key={column} className="text-muted-foreground">
+                <TableCell key={column} className="font-medium">
                   {String(row[column] ?? '')}
                 </TableCell>
               ))}
@@ -46,20 +48,22 @@ function DetailTable({ rows }: { rows: Row[] }) {
   const previewRows = rows.slice(0, 8);
 
   return (
-    <div className="rounded-2xl border bg-background/70">
+    <div className="overflow-hidden rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="border-b bg-muted/30 hover:bg-muted/40">
             {columns.map((column) => (
-              <TableHead key={column}>{column}</TableHead>
+              <TableHead key={column} className="font-semibold text-foreground">
+                {column}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {previewRows.map((row, index) => (
-            <TableRow key={index}>
+            <TableRow key={index} className="transition-colors hover:bg-muted/20">
               {columns.map((column) => (
-                <TableCell key={column} className="max-w-[220px] truncate text-muted-foreground">
+                <TableCell key={column} className="max-w-[220px] truncate font-medium">
                   {String(row[column] ?? '')}
                 </TableCell>
               ))}
@@ -67,26 +71,31 @@ function DetailTable({ rows }: { rows: Row[] }) {
           ))}
         </TableBody>
       </Table>
+      {rows.length > 8 && (
+        <div className="border-t bg-muted/20 px-4 py-3 text-center text-xs text-muted-foreground">
+          Showing 8 of {rows.length} rows
+        </div>
+      )}
     </div>
   );
 }
 
 function StatCard({ title, value, description, icon: Icon }: { title: string; value: string; description: string; icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
+    <Card className="group border-border/60 bg-card/80 shadow-sm backdrop-blur-sm transition-all hover:border-border hover:shadow-lg">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <CardDescription>{title}</CardDescription>
-            <CardTitle className="mt-2 text-3xl font-semibold tracking-tight">{value}</CardTitle>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <CardDescription className="text-xs font-medium uppercase tracking-wider">{title}</CardDescription>
+            <CardTitle className="text-4xl font-bold tracking-tight">{value}</CardTitle>
           </div>
-          <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+          <div className="rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/20 transition-all group-hover:bg-primary/15 group-hover:ring-primary/30">
             <Icon className="size-5" />
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   );
@@ -98,34 +107,34 @@ export default async function HomePage() {
   const phase3Rows = phase3?.rows ?? [];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-6 py-12 md:px-10 lg:px-12">
-      <section className="space-y-6">
+    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-10 px-6 py-12 md:px-10 md:py-16 lg:px-12 lg:py-20">
+      <section className="space-y-8">
         <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.2em]">
+          <Badge variant="secondary" className="rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] shadow-sm">
             Pydantic Agent Benchmark
           </Badge>
-          <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
+          <Badge variant="outline" className="rounded-full px-4 py-1.5 text-xs font-medium shadow-sm">
             Kimi 2.5 · shadcn/ui · Next.js
           </Badge>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-          <div className="space-y-4">
-            <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">
+        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+          <div className="space-y-6">
+            <h1 className="max-w-4xl bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl md:leading-[1.1]">
               Measure structured-output agents like a system, not a vibe.
             </h1>
-            <p className="max-w-3xl text-base leading-7 text-muted-foreground md:text-lg">
+            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
               Compare prompt-only JSON, schema-constrained output, and schema plus Pydantic validation across
               single-turn extraction and multi-step agent loops.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button asChild size="lg" className="shadow-md transition-shadow hover:shadow-lg">
                 <a href="#results">
                   View benchmark results
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="ml-2 size-4" />
                 </a>
               </Button>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" size="lg" className="shadow-sm">
                 <a href="https://ui.shadcn.com/docs/installation/next" target="_blank" rel="noreferrer">
                   shadcn/ui docs
                 </a>
@@ -133,23 +142,23 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
+          <Card className="border-border/60 bg-card/80 shadow-md backdrop-blur-sm transition-all hover:shadow-lg">
             <CardHeader>
-              <CardTitle>Current build status</CardTitle>
-              <CardDescription>Frontend is on shadcn/ui. Benchmark runner is live. Phase 3 is being tightened for stability.</CardDescription>
+              <CardTitle className="text-xl">Current build status</CardTitle>
+              <CardDescription className="leading-relaxed">Frontend is on shadcn/ui. Benchmark runner is live. Phase 3 is being tightened for stability.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="flex items-center justify-between">
-                <span>Phase 2</span>
-                <Badge>Ready</Badge>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+                <span className="font-medium">Phase 2</span>
+                <Badge className="shadow-sm">Ready</Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Phase 3 runner</span>
-                <Badge variant="secondary">Improving</Badge>
+              <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+                <span className="font-medium">Phase 3 runner</span>
+                <Badge variant="secondary" className="shadow-sm">Improving</Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Vercel-ready UI</span>
-                <Badge variant="outline">In progress</Badge>
+              <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+                <span className="font-medium">Vercel-ready UI</span>
+                <Badge variant="outline" className="shadow-sm">In progress</Badge>
               </div>
             </CardContent>
           </Card>
