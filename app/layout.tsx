@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable, jetbrainsMonoHeading.variable)}>
-      <body>{children}</body>
+    <html lang="en" className={cn("dark font-sans", geist.variable, jetbrainsMonoHeading.variable)}>
+      <body className="min-h-screen bg-background text-foreground">{children}</body>
     </html>
   );
 }

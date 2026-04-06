@@ -2,6 +2,10 @@
 @import "../node_modules/tw-animate-css/dist/tw-animate.css";
 @import "../node_modules/shadcn/dist/tailwind.css";
 
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
