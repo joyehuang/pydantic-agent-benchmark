@@ -186,67 +186,76 @@ export default async function HomePage() {
         />
       </section>
 
-      <section id="results" className="space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Benchmark results</h2>
-          <p className="text-sm text-muted-foreground">Summary first, then a preview of raw benchmark rows for each phase.</p>
+      <section id="results" className="space-y-8">
+        <div className="space-y-3">
+          <h2 className="text-3xl font-bold tracking-tight">Benchmark results</h2>
+          <p className="text-base text-muted-foreground">Summary first, then a preview of raw benchmark rows for each phase.</p>
         </div>
 
         <Tabs defaultValue="phase2" className="w-full">
-          <TabsList>
-            <TabsTrigger value="phase2">Phase 2</TabsTrigger>
-            <TabsTrigger value="phase3">Phase 3</TabsTrigger>
+          <TabsList className="grid w-full max-w-md grid-cols-2 shadow-sm">
+            <TabsTrigger value="phase2" className="font-medium">Phase 2</TabsTrigger>
+            <TabsTrigger value="phase3" className="font-medium">Phase 3</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="phase2">
-            <Card className="border-border/60 bg-card/85 backdrop-blur-sm">
+          <TabsContent value="phase2" className="mt-6">
+            <Card className="border-border/60 bg-card/85 shadow-md backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Single-turn structured output</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-2xl">Single-turn structured output</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
                   Extraction and planning tasks measured for latency, JSON success, and schema pass rate.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="space-y-6">
                 {phase2 ? (
                   <>
-                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground/80">Generated {phase2.generated_at}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Generated {phase2.generated_at}</p>
+                    </div>
                     <SummaryTable rows={phase2.summary} />
-                    <Separator />
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium">Detailed row preview</h3>
+                    <Separator className="my-6" />
+                    <div className="space-y-4">
+                      <h3 className="text-base font-semibold">Detailed row preview</h3>
                       <DetailTable rows={phase2Rows} />
                     </div>
                   </>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No Phase 2 results found yet.</p>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-12 text-center">
+                    <p className="text-sm font-medium text-muted-foreground">No Phase 2 results found yet.</p>
+                    <p className="mt-1 text-xs text-muted-foreground/80">Run the benchmark to see results here.</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="phase3">
-            <Card className="border-border/60 bg-card/85 backdrop-blur-sm">
+          <TabsContent value="phase3" className="mt-6">
+            <Card className="border-border/60 bg-card/85 shadow-md backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Agent loop benchmark</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-2xl">Agent loop benchmark</CardTitle>
+                <CardDescription className="text-base leading-relaxed">
                   Multi-step loop with mocked tools for weather, calendar, retrieval, and final answers.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="space-y-6">
                 {phase3 ? (
                   <>
-                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground/80">Generated {phase3.generated_at}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Generated {phase3.generated_at}</p>
+                    </div>
                     <SummaryTable rows={phase3.summary} />
-                    <Separator />
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium">Detailed row preview</h3>
+                    <Separator className="my-6" />
+                    <div className="space-y-4">
+                      <h3 className="text-base font-semibold">Detailed row preview</h3>
                       <DetailTable rows={phase3Rows} />
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <p>No Phase 3 results found yet.</p>
-                    <p>The runner is in place; current work is improving timeout tolerance and loop stability.</p>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-12 text-center">
+                    <p className="text-sm font-medium text-muted-foreground">No Phase 3 results found yet.</p>
+                    <p className="mt-2 text-xs text-muted-foreground/80">The runner is in place; current work is improving timeout tolerance and loop stability.</p>
                   </div>
                 )}
               </CardContent>
