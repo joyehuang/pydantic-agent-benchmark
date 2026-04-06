@@ -1,0 +1,28 @@
+{
+  "name": "pydantic-agent-benchmark",
+  "version": "1.0.0",
+  "description": "Benchmark structured-output agent loops with Pydantic and visualize results.",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "vercel": "vercel"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "next": "^16.2.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3",
+    "vercel": "^50.39.0"
+  }
+}
