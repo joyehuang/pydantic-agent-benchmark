@@ -53,6 +53,7 @@ class TaskRunResult:
     retries: int
     rounds: int
     failure_type: str | None
+    last_action: str | None
 
 
 def build_phase2_prompts(schema_name: str, user_input: str, group: str) -> tuple[str, str, dict[str, Any] | None]:
@@ -235,27 +236,53 @@ AGENT_ACTION_SCHEMA = {
 }
 
 
+def compact_scratchpad(scratchpad: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    compact: list[dict[str, Any]] = []
+    for item in scratchpad[-4:]:
+        if 'assistant_step' in item:
+            step = item['assistant_step']
+            compact.append(
+                {
+                    'assistant_step': {
+                        'action': step.get('action'),
+                        'done': step.get('done'),
+                        'args': step.get('args'),
+                    }
+                }
+            )
+        elif 'tool_result' in item:
+            compact.append({'tool_result': item['tool_result']})
+    return compact
+
+
 def build_agent_prompt(task_input: str, scratchpad: list[dict[str, Any]], reference_date: str) -> tuple[str, str]:
     system = (
-        'You are an agent loop controller. Return JSON only. '
-        'Choose exactly one action from search_docs, lookup_weather, lookup_calendar, final_answer. '
-        'When enough information is available, use final_answer.'
+        'You are an agent loop controller. Return exactly one JSON object and nothing else. '
+        'Allowed actions: search_docs, lookup_weather, lookup_calendar, final_answer. '
+        'Use the minimum required tool calls. If enough evidence is already present, return final_answer. '
+        'Keep thought under 12 words.'
     )
     user = (
         f'Reference date: {reference_date}\n'
         f'Task: {task_input}\n'
-        f'Previous steps and tool results: {json.dumps(scratchpad, ensure_ascii=False)}\n'
-        'Return one next action as JSON.'
+        f'Context: {json.dumps(compact_scratchpad(scratchpad), ensure_ascii=False)}\n'
+        'If weather is needed, lookup_weather args must be {city, date}. '
+        'If calendar is needed, lookup_calendar args must be {date}. '
+        'If docs are needed, search_docs args must be {query}. '
+        'If done, final_answer args must be {answer, confidence}.\n'
+        'Return the next step now.'
     )
     return system, user
 
 
-def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 5) -> dict[str, Any]:
+def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 4, tasks: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     adapter = TypeAdapter(AgentStep)
     rows: list[TaskRunResult] = []
 
+    phase3_tasks = tasks or PHASE3_TASKS
+
     for group in GROUPS:
-        for task in PHASE3_TASKS:
+        for task in phase3_tasks:
             for _ in range(repeats):
                 scratchpad: list[dict[str, Any]] = []
                 total_latency = 0.0
@@ -263,6 +290,7 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 5) -> dic
                 retries = 0
                 task_success = False
                 failure_type = None
+                last_action = None
 
                 for round_index in range(1, max_rounds + 1):
                     attempt = 0
@@ -308,6 +336,7 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 5) -> dic
                             break
 
                         step_data = step.model_dump()
+                        last_action = step_data['action']
                         scratchpad.append({'assistant_step': step_data})
                         if step_data['action'] == 'final_answer':
                             task_success = True
@@ -337,6 +366,7 @@ def run_phase3(provider: KimiProvider, repeats: int, max_rounds: int = 5) -> dic
                         retries=retries,
                         rounds=len([item for item in scratchpad if 'assistant_step' in item]),
                         failure_type=failure_type,
+                        last_action=last_action,
                     )
                 )
 
@@ -367,6 +397,7 @@ def main() -> None:
     parser.add_argument('--phase', choices=['phase2', 'phase3', 'all'], default='all')
     parser.add_argument('--repeats', type=int, default=2)
     parser.add_argument('--model', default='kimi-k2-0711-preview')
+    parser.add_argument('--limit', type=int, default=0, help='Optional limit for quick local runs')
     args = parser.parse_args()
 
     provider = KimiProvider(model=args.model)
@@ -377,7 +408,8 @@ def main() -> None:
             print('Wrote results/phase2.latest.json')
 
         if args.phase in {'phase3', 'all'}:
-            phase3_result = run_phase3(provider, repeats=args.repeats)
+            selected_tasks = PHASE3_TASKS[: args.limit] if args.limit else PHASE3_TASKS
+            phase3_result = run_phase3(provider, repeats=args.repeats, tasks=selected_tasks)
             write_result_json('phase3.latest.json', phase3_result)
             print('Wrote results/phase3.latest.json')
     finally:
